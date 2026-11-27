@@ -1,0 +1,54 @@
+name: qr-ticketing
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  booking-service:
+    build: ../../backend/booking_service
+    restart: unless-stopped
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      VALIDATION_SERVICE_URL: http://validation-service:8000
+    depends_on:
+      - db
+    ports:
+      - "8001:8000"
+    networks:
+      - backend
+
+  validation-service:
+    build: ../../backend/validation_service
+    restart: unless-stopped
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      - db
+    ports:
+      - "8002:8000"
+    networks:
+      - backend
+
+volumes:
+  pgdata:
+
+networks:
+  backend:
+    driver: bridge
